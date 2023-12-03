@@ -1,12 +1,16 @@
 defmodule Day02CubeConundrum do
 
-  @sample_data """
+  @sample_data_part_1 """
     Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
     Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
     Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
     Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
     Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
     """
+
+  @sample_data_part_2 @sample_data_part_1
+
+  use Aoc.SolutionUtils
 
   defmodule Game do
     defstruct [:id, sets: []]
@@ -22,11 +26,7 @@ defmodule Day02CubeConundrum do
       iex> Day02CubeConundrum.sample_solution_part1()
       8
   """
-  def sample_solution_part1() do
-    @sample_data
-    |> multiline_string_to_lines_stream()
-    |> solution_part1()
-  end
+  def sample_solution_part1()
 
   @doc ~S"""
   ## Examples
@@ -34,11 +34,7 @@ defmodule Day02CubeConundrum do
       iex> Day02CubeConundrum.solution_for_file_part1()
       2285
   """
-  def solution_for_file_part1() do
-    "input.txt"
-    |> input_file_to_lines_stream()
-    |> solution_part1()
-  end
+  def solution_for_file_part1()
 
   defp solution_part1(lines) do
     lines
@@ -56,11 +52,7 @@ defmodule Day02CubeConundrum do
       iex> Day02CubeConundrum.sample_solution_part2()
       2286
   """
-  def sample_solution_part2() do
-    @sample_data
-    |> multiline_string_to_lines_stream()
-    |> solution_part2()
-  end
+  def sample_solution_part2()
 
   @doc ~S"""
   ## Examples
@@ -68,11 +60,7 @@ defmodule Day02CubeConundrum do
       iex> Day02CubeConundrum.solution_for_file_part2()
       77021
   """
-  def solution_for_file_part2() do
-    "input.txt"
-    |> input_file_to_lines_stream()
-    |> solution_part2()
-  end
+  def solution_for_file_part2()
 
   defp solution_part2(lines) do
     lines
@@ -121,17 +109,5 @@ defmodule Day02CubeConundrum do
 
   defp power(set) do
     set.red * set.green * set.blue
-  end
-
-  defp multiline_string_to_lines_stream(input) do
-    input
-    |> String.split("\n")
-    |> Enum.map(fn line -> line <> "\n"  end)
-    |> Enum.reject(fn line -> String.trim(line) == "" end)
-  end
-
-  defp input_file_to_lines_stream(filename) do
-    File.stream!(Path.join([Path.dirname(__ENV__.file), filename]))
-    |> Enum.reject(fn line -> String.trim(line) == "" end)
   end
 end

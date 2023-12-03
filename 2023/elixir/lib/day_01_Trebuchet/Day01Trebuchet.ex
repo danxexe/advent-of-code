@@ -6,6 +6,17 @@ defmodule Day01Trebuchet do
     a1b2c3d4e5f
     treb7uchet
     """
+  @sample_data_part_2 """
+    two1nine
+    eightwothree
+    abcone2threexyz
+    xtwone3four
+    4nineeightseven2
+    zoneight234
+    7pqrstsixteen
+    """
+
+  use Aoc.SolutionUtils
 
   @doc ~S"""
   ## Examples
@@ -13,11 +24,7 @@ defmodule Day01Trebuchet do
       iex> Day01Trebuchet.sample_solution_part1()
       142
   """
-  def sample_solution_part1() do
-    @sample_data_part_1
-    |> multiline_string_to_lines_stream()
-    |> solution_part1()
-  end
+  def sample_solution_part1()
 
   @doc ~S"""
   ## Examples
@@ -25,11 +32,7 @@ defmodule Day01Trebuchet do
       iex> Day01Trebuchet.solution_for_file_part1()
       54597
   """
-  def solution_for_file_part1() do
-    "input.txt"
-    |> input_file_to_lines_stream()
-    |> solution_part1()
-  end
+  def solution_for_file_part1()
 
   defp solution_part1(lines) do
     lines
@@ -40,27 +43,13 @@ defmodule Day01Trebuchet do
     |> Enum.sum()
   end
 
-  @sample_data_part_2 """
-  two1nine
-  eightwothree
-  abcone2threexyz
-  xtwone3four
-  4nineeightseven2
-  zoneight234
-  7pqrstsixteen
-  """
-
   @doc ~S"""
   ## Examples
 
       iex> Day01Trebuchet.sample_solution_part2()
       281
   """
-  def sample_solution_part2() do
-    @sample_data_part_2
-    |> multiline_string_to_lines_stream()
-    |> solution_part2()
-  end
+  def sample_solution_part2()
 
   @doc ~S"""
   ## Examples
@@ -68,11 +57,7 @@ defmodule Day01Trebuchet do
       iex> Day01Trebuchet.solution_for_file_part2()
       54504
   """
-  def solution_for_file_part2() do
-    "input.txt"
-    |> input_file_to_lines_stream()
-    |> solution_part2()
-  end
+  def solution_for_file_part2()
 
   defp solution_part2(lines) do
     lines
@@ -113,17 +98,5 @@ defmodule Day01Trebuchet do
     |> String.replace("seven", "seven7seven")
     |> String.replace("eight", "eight8eight")
     |> String.replace("nine", "nine9nine")
-  end
-
-  defp multiline_string_to_lines_stream(input) do
-    input
-    |> String.split("\n")
-    |> Enum.map(fn line -> line <> "\n"  end)
-    |> Enum.reject(fn line -> String.trim(line) == "" end)
-  end
-
-  defp input_file_to_lines_stream(filename) do
-    File.stream!(Path.join([Path.dirname(__ENV__.file), filename]))
-    |> Enum.reject(fn line -> String.trim(line) == "" end)
   end
 end
