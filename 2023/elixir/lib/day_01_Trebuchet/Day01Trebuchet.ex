@@ -62,6 +62,12 @@ defmodule Day01Trebuchet do
     |> solution_part2()
   end
 
+  @doc ~S"""
+  ## Examples
+
+      iex> Day01Trebuchet.solution_for_file_part2()
+      54504
+  """
   def solution_for_file_part2() do
     "input.txt"
     |> input_file_to_lines_stream()
