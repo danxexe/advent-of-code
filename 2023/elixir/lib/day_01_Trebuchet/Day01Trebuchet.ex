@@ -33,7 +33,6 @@ defmodule Day01Trebuchet do
 
   defp solution_part1(lines) do
     lines
-    |> Enum.reject(fn line -> String.trim(line) == "" end)
     |> Enum.reject(fn line -> line == "" end)
     |> Enum.map(&digits/1)
     |> Enum.map(&concat_first_and_last_digit/1)
@@ -71,7 +70,6 @@ defmodule Day01Trebuchet do
 
   defp solution_part2(lines) do
     lines
-    |> Enum.reject(fn line -> String.trim(line) == "" end)
     |> Enum.map(&normalize_textual_digits/1)
     |> Enum.map(&digits/1)
     |> Enum.map(&concat_first_and_last_digit/1)
@@ -115,9 +113,11 @@ defmodule Day01Trebuchet do
     input
     |> String.split("\n")
     |> Enum.map(fn line -> line <> "\n"  end)
+    |> Enum.reject(fn line -> String.trim(line) == "" end)
   end
 
   defp input_file_to_lines_stream(filename) do
     File.stream!(Path.join([Path.dirname(__ENV__.file), filename]))
+    |> Enum.reject(fn line -> String.trim(line) == "" end)
   end
 end
