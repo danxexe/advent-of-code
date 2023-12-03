@@ -1,6 +1,6 @@
 defmodule Day02CubeConundrum do
 
-  @sample_data_part_1 """
+  @sample_data """
     Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
     Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
     Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
@@ -20,10 +20,10 @@ defmodule Day02CubeConundrum do
   ## Examples
 
       iex> Day02CubeConundrum.sample_solution_part1()
-      142
+      8
   """
   def sample_solution_part1() do
-    @sample_data_part_1
+    @sample_data
     |> multiline_string_to_lines_stream()
     |> solution_part1()
   end
@@ -32,7 +32,7 @@ defmodule Day02CubeConundrum do
   ## Examples
 
       iex> Day02CubeConundrum.solution_for_file_part1()
-      nil
+      2285
   """
   def solution_for_file_part1() do
     "input.txt"
@@ -47,6 +47,38 @@ defmodule Day02CubeConundrum do
     |> Enum.map(fn {id, set} -> {id, possible?(set)} end)
     |> Enum.filter(fn {_id, possible} -> possible end)
     |> Enum.map(fn {id, _possible} -> id end)
+    |> Enum.sum()
+  end
+
+  @doc ~S"""
+  ## Examples
+
+      iex> Day02CubeConundrum.sample_solution_part2()
+      2286
+  """
+  def sample_solution_part2() do
+    @sample_data
+    |> multiline_string_to_lines_stream()
+    |> solution_part2()
+  end
+
+  @doc ~S"""
+  ## Examples
+
+      iex> Day02CubeConundrum.solution_for_file_part2()
+      77021
+  """
+  def solution_for_file_part2() do
+    "input.txt"
+    |> input_file_to_lines_stream()
+    |> solution_part2()
+  end
+
+  defp solution_part2(lines) do
+    lines
+    |> Enum.map(&parse_line/1)
+    |> Enum.map(&max_set/1)
+    |> Enum.map(fn {_id, set} -> power(set) end)
     |> Enum.sum()
   end
 
@@ -85,6 +117,10 @@ defmodule Day02CubeConundrum do
 
   defp possible?(set) do
     set.red <= 12 && set.green <= 13 && set.blue <= 14
+  end
+
+  defp power(set) do
+    set.red * set.green * set.blue
   end
 
   defp multiline_string_to_lines_stream(input) do
