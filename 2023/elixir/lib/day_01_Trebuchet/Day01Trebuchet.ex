@@ -75,7 +75,6 @@ defmodule Day01Trebuchet do
     |> Enum.map(&normalize_textual_digits/1)
     |> Enum.map(&digits/1)
     |> Enum.map(&concat_first_and_last_digit/1)
-    |> Enum.map(fn e -> e |> IO.puts; e end)
     |> Enum.map(&to_int/1)
     |> Enum.sum()
   end
@@ -99,42 +98,17 @@ defmodule Day01Trebuchet do
     num
   end
 
-  def normalize_textual_digits(line), do: normalize_textual_digits(line, "", "")
-  def normalize_textual_digits(_line = "", _acc = "", normalized), do: normalized
-  def normalize_textual_digits(line, acc, normalized) do
-    {replaced, acc} = replace_digit_match(acc)
-    {next, line} = line |> String.split_at(1)
-
-    # {line, acc <> next, normalized <> replaced} |> IO.inspect()
-
-    normalize_textual_digits(line, acc <> next, normalized <> replaced)
-  end
-
-  @textual_digits ~w[one two three four five six seven eight nine]
-
-  defp replace_digit_match(acc) do
-    {_replaced, _acc} = case acc do
-      "one" -> {"1", ""}
-      "two" -> {"2", ""}
-      "three" -> {"3", ""}
-      "four" -> {"4", ""}
-      "five" -> {"5", ""}
-      "six" -> {"6", ""}
-      "seven" -> {"7", ""}
-      "eight" -> {"8", ""}
-      "nine" -> {"9", ""}
-      other -> case {partial_digit_match?(other), String.length(other)} do
-        {true, _} -> {"", other}
-        {false, 1} -> {other, ""}
-        {false, _n} -> other |> String.split_at(1)
-      end
-    end
-  end
-
-  defp partial_digit_match?(partial) do
-    Enum.reduce(@textual_digits, false, fn digit, acc ->
-      String.starts_with?(digit, partial) || acc
-    end)
+  def normalize_textual_digits(line) do
+    line
+    |> String.replace("one", "one1one")
+    |> String.replace("two", "two2two")
+    |> String.replace("three", "three3three")
+    |> String.replace("four", "four4four")
+    |> String.replace("five", "five5five")
+    |> String.replace("six", "six6six")
+    |> String.replace("seven", "seven7seven")
+    |> String.replace("eight", "eight8eight")
+    |> String.replace("nine", "nine9nine")
   end
 
   defp multiline_string_to_lines_stream(input) do
