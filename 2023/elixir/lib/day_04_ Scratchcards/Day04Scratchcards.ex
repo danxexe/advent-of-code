@@ -14,7 +14,7 @@ defmodule Day04Scratchcards do
   use Aoc.SolutionUtils
 
   defmodule Card do
-    defstruct [name: nil, winning: [], owned: [], points: nil]
+    defstruct [id: nil, winning: [], owned: [], points: nil, matching: []]
   end
 
   @doc ~S"""
@@ -37,15 +37,15 @@ defmodule Day04Scratchcards do
   ## Examples
 
       iex> Day04Scratchcards.sample_solution_part2()
-      nil
+      30
   """
   def sample_solution_part2()
 
   @doc ~S"""
   ## Examples
 
-      iex> Day04Scratchcards.solution_for_file_part1()
-      nil
+      iex> Day04Scratchcards.solution_for_file_part2()
+      6050769
   """
   def solution_for_file_part2()
 
@@ -58,16 +58,27 @@ defmodule Day04Scratchcards do
   end
 
   defp solution_part2(lines) do
-    nil
+    cards = lines
+    |> Enum.map(&parse_card/1)
+    |> Enum.map(&compute_matching/1)
+
+    cards_by_id = cards
+    |> Enum.map(fn card -> {card.id, card} end)
+    |> Enum.into(%{})
+
+    cards
+    |> Enum.flat_map(fn card -> expand_matching(card, cards_by_id) end)
+    |> Enum.count()
   end
 
   defp parse_card(line) do
-    [name, numbers] = line |> String.split(":")
+    [id, numbers] = line |> String.split(":")
+    id = Regex.run(~r/\d+/, id) |> hd() |> Integer.parse() |> elem(0)
     [winning, owned] = numbers |> String.split("|")
     winning = Regex.scan(~r/\d+/, winning) |> Enum.map(&parse_number/1)
     owned = Regex.scan(~r/\d+/, owned) |> Enum.map(&parse_number/1)
 
-    %Card{name: name, winning: winning, owned: owned}
+    %Card{id: id, winning: winning, owned: owned}
   end
 
   defp parse_number([num]) do
@@ -84,5 +95,31 @@ defmodule Day04Scratchcards do
     end)
 
     %Card{card | points: points}
+  end
+
+  defp compute_matching(card) do
+    matching = card.owned |> Enum.reduce([], fn number, acc ->
+      if Enum.member?(card.winning, number) do
+        [number | acc]
+      else
+        acc
+      end
+    end)
+    |> Enum.reverse()
+
+    %Card{card | matching: matching}
+  end
+
+  defp expand_matching(card, cards_by_id) do
+    copy_start = card.id + 1
+    copy_end = card.id + Enum.count(card.matching)
+
+    expanded = (copy_start..copy_end//1)
+    |> Enum.map(fn i ->
+      cards_by_id[i]
+    end)
+    |> Enum.flat_map(fn card -> expand_matching(card, cards_by_id) end)
+
+    [card | expanded]
   end
 end
