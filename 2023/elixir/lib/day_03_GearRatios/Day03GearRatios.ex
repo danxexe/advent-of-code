@@ -52,8 +52,8 @@ defmodule Day03GearRatios do
   @doc ~S"""
   ## Examples
 
-      iex> Day03GearRatios.solution_for_file_part1()
-      nil
+      iex> Day03GearRatios.solution_for_file_part2()
+      81709807
   """
   def solution_for_file_part2()
 
@@ -96,8 +96,8 @@ defmodule Day03GearRatios do
     |> Enum.filter(&with_only_2_adjacent/1)
     |> Enum.map(fn gear -> associate_parts(gear, parts) end)
     |> Enum.map(&compute_ratio/1)
-    # |> Enum.map(fn gear -> gear.ratio end)
-    # |> Enum.sum()
+    |> Enum.map(fn gear -> gear.ratio end)
+    |> Enum.sum()
   end
 
   defp parse_parts({line, row}) do
