@@ -4,4 +4,5 @@ defmodule AocTest do
   doctest Day02CubeConundrum
   doctest Day03GearRatios
   doctest Day04Scratchcards
+  doctest D05
 end

@@ -1,7 +1,8 @@
-defmodule Day05IfYouGiveASeedAFertilizer do
+defmodule D05 do
+  require IEx
 
   @sample_data_part_1 """
-    seeds: 3394639029
+    seeds: 79 14 55 13
 
     seed-to-soil map:
     50 98 2
@@ -40,14 +41,26 @@ defmodule Day05IfYouGiveASeedAFertilizer do
 
   use Aoc.SolutionUtils
 
+  defmodule Layer do
+    defstruct [:name, :mappings]
+  end
+
   defmodule Mapping do
-    defstruct [source: nil, diff: nil]
+    defstruct [:source, :shift]
+  end
+
+  defmodule MappingTransform do
+    defstruct [:range, :mapping, :intersection, :shifted, :difference, :mapped]
+  end
+
+  defmodule LayerTransform do
+    defstruct [:name, :mappings, :normalized, :next]
   end
 
   @doc ~S"""
   ## Examples
 
-      iex> Day05IfYouGiveASeedAFertilizer.sample_solution_part1()
+      iex> D05.sample_solution_part1()
       35
   """
   def sample_solution_part1()
@@ -55,7 +68,7 @@ defmodule Day05IfYouGiveASeedAFertilizer do
   @doc ~S"""
   ## Examples
 
-      iex> Day05IfYouGiveASeedAFertilizer.solution_for_file_part1()
+      iex> D05.solution_for_file_part1()
       88151870
   """
   def solution_for_file_part1()
@@ -63,7 +76,7 @@ defmodule Day05IfYouGiveASeedAFertilizer do
   @doc ~S"""
   ## Examples
 
-      iex> Day05IfYouGiveASeedAFertilizer.sample_solution_part2()
+      iex> D05.sample_solution_part2()
       46
   """
   def sample_solution_part2()
@@ -71,8 +84,8 @@ defmodule Day05IfYouGiveASeedAFertilizer do
   @doc ~S"""
   ## Examples
 
-      iex> Day05IfYouGiveASeedAFertilizer.solution_for_file_part2()
-      nil
+      iex> D05.solution_for_file_part2()
+      2008785
   """
   def solution_for_file_part2()
 
@@ -95,198 +108,72 @@ defmodule Day05IfYouGiveASeedAFertilizer do
     |> Enum.min()
   end
 
-  @doc ~S"""
-  Terrbile attempt at "backtracking" the solution with unrolled loops.
-  Apply mappings in reverse only for the smallest humidity-to-location range,
-  Then brute-force for the seed ranges found.
-
-  The current answer, 194991402, still takes a long time to compute
-  and is wrong anyway. Committing this for future :facepalm: purposes.
-
-  The actual optimized solution should be something like:
-  - For each layer (including seeds)
-    - Merge ranges if !Range.disjoint?(a, b): min(a.first, b.first)..max(a.last, b.last)
-    - For each range
-      - Reduce source mappings of next layer, spliting into {before, join, after}
-      - Map new ranges to destination
-  """
-  defp solution_part2(lines) do
-    DateTime.utc_now() |> IO.inspect
+  def solution_part2(lines) do
     seeds = lines |> Enum.take(1) |> hd() |> parse_int_list()
-    |> Stream.chunk_every(2)
-    |> Stream.map(fn [start, len] ->
-      start..(start + len - 1)
-    end)
+    |> Enum.chunk_every(2)
+    |> Enum.map(fn [start, size] -> (start..start+size-1) end)
 
     {_, maps} = lines
-    |> Stream.drop(1)
-    |> Stream.map(&String.trim/1)
+    |> Enum.drop(1)
+    |> Enum.map(&String.trim/1)
     |> Enum.reduce({nil, []}, &parse_line/2)
 
-    maps = maps
+    layers = maps
     |> Enum.reverse()
-    |> Enum.map(fn {_k, v} ->
-      v |> Enum.map(&parse_map/1) |> Enum.reverse()
+    |> Enum.map(fn {k, v} ->
+      %Layer{
+        name: k |> to_string(),
+        mappings: v |> Enum.map(&parse_map/1) |> Enum.sort_by(fn mapping -> mapping.source.first end),
+      }
     end)
 
-    indexes = []
+    last_transform = layers
+    |> Enum.reduce(seeds, fn layer, acc ->
+      ranges = case acc do
+        %LayerTransform{normalized: normalized} -> normalized
+        ranges -> ranges
+      end
 
-    # humidity-to-location
-    layer = maps
-    |> Enum.at(6)
-
-    sorted = layer
-    |> Enum.map(fn {range, diff} ->
-      {range.first + diff, range}
-    end)
-    |> Enum.with_index()
-    |> Enum.sort_by(fn {{first, range}, i} -> first end)
-
-    {{_min, range}, i} = sorted |> hd()
-    indexes = [[i] | indexes]
-
-    # 2984989380..3009100645
-    range
-
-    # temperature-to-humidity
-    layer = maps
-    |> Enum.at(5)
-
-    sorted = layer
-    |> Enum.map(fn {range, diff} ->
-      (range.first + diff)..(range.last + diff)
-    end)
-    |> Enum.with_index()
-    |> Enum.sort_by(fn {range, i} -> range.first end)
-    |> Enum.filter(fn {r, _i} -> r.first <= range.first && r.last >= range.last end)
-
-    {range, i} = sorted |> hd()
-    indexes = [[i] | indexes]
-
-    # 2631474761..3690130271
-    range
-
-    # light-to-temperature
-    layer = maps
-    |> Enum.at(4)
-
-    sorted = layer
-    |> Enum.map(fn {range, diff} ->
-      (range.first + diff)..(range.last + diff)
-    end)
-    |> Enum.with_index()
-    |> Enum.sort_by(fn {range, i} -> range.first end)
-    |> Enum.reject(fn {r, _i} -> Range.disjoint?(r, range) end)
-
-    ranges = sorted
-    |> Enum.map(fn {range, _i} -> range end)
-    indexes = [sorted |> Enum.map(fn {_,i} -> i end) | indexes]
-
-    # water-to-light
-    layer = maps
-    |> Enum.at(3)
-
-    sorted = layer
-    |> Enum.map(fn {range, diff} ->
-      (range.first + diff)..(range.last + diff)
-    end)
-    |> Enum.with_index()
-    |> Enum.sort_by(fn {range, i} -> range.first end)
-    |> Enum.reject(fn {a, _i} ->
-      ranges |> Enum.reduce(fn b, acc ->
-        acc && Range.disjoint?(a, b)
-      end)
+      normalized = map_next_range(layer.mappings, ranges, [])
+      %LayerTransform{name: layer.name, normalized: normalized}
     end)
 
-    ranges = sorted
-    |> Enum.map(fn {range, _i} -> range end)
-    indexes = [sorted |> Enum.map(fn {_,i} -> i end) | indexes]
+    last_transform.normalized
+    |> Enum.map(fn range -> range |> Enum.min end)
+    |> Enum.min
+  end
 
-    # fertilizer-to-water
-    layer = maps
-    |> Enum.at(2)
+  defp map_next_range(_mappings, [], acc), do: acc
+  defp map_next_range(mappings, [range | rest], acc) do
+    found = mappings
+    |> Enum.find(fn mapping -> !Range.disjoint?(range, mapping.source) end)
 
-    sorted = layer
-    |> Enum.map(fn {range, diff} ->
-      (range.first + diff)..(range.last + diff)
-    end)
-    |> Enum.with_index()
-    |> Enum.sort_by(fn {range, i} -> range.first end)
-    |> Enum.reject(fn {a, _i} ->
-      ranges |> Enum.reduce(fn b, acc ->
-        acc && Range.disjoint?(a, b)
-      end)
-    end)
+    case found do
+      nil -> map_next_range(mappings, rest, [range | acc])
+      mapping -> case apply_mapping(mapping, range) do
+        %MappingTransform{shifted: shifted, difference: []} ->
+          map_next_range(mappings, rest, shifted ++ acc)
+        %MappingTransform{shifted: shifted, difference: difference} ->
+          map_next_range(mappings, difference ++ rest, shifted ++ acc)
+      end
+    end
+  end
 
-    ranges = sorted
-    |> Enum.map(fn {range, _i} -> range end)
-    indexes = [sorted |> Enum.map(fn {_,i} -> i end) | indexes]
+  defp apply_mapping(mapping, range) do
+    intersection = RangeOperation.intersection(range, mapping.source)
+    difference = RangeOperation.difference(range, mapping.source)
+    shifted = intersection |> Enum.map(fn range -> Range.shift(range, mapping.shift) end)
 
-    # soil-to-fertilizer
-    layer = maps
-    |> Enum.at(1)
+    mapped = (shifted ++ difference)
 
-    sorted = layer
-    |> Enum.map(fn {range, diff} ->
-      (range.first + diff)..(range.last + diff)
-    end)
-    |> Enum.with_index()
-    |> Enum.sort_by(fn {range, i} -> range.first end)
-    |> Enum.reject(fn {a, _i} ->
-      ranges |> Enum.reduce(fn b, acc ->
-        acc && Range.disjoint?(a, b)
-      end)
-    end)
-
-    ranges = sorted
-    |> Enum.map(fn {range, _i} -> range end)
-    indexes = [sorted |> Enum.map(fn {_,i} -> i end) | indexes]
-
-    # seed-to-soil
-    layer = maps
-    |> Enum.at(0)
-
-    sorted = layer
-    |> Enum.map(fn {range, diff} ->
-      (range.first + diff)..(range.last + diff)
-    end)
-    |> Enum.with_index()
-    |> Enum.sort_by(fn {range, i} -> range.first end)
-    |> Enum.reject(fn {a, _i} ->
-      ranges |> Enum.reduce(fn b, acc ->
-        acc && Range.disjoint?(a, b)
-      end)
-    end)
-
-    ranges = sorted
-    |> Enum.map(fn {range, _i} -> range end)
-    indexes = [sorted |> Enum.map(fn {_,i} -> i end) | indexes]
-
-    # seeds
-    sorted = seeds
-    |> Enum.with_index()
-    |> Enum.sort_by(fn {range, i} -> range.first end)
-    |> Enum.reject(fn {a, _i} ->
-      ranges |> Enum.reduce(fn b, acc ->
-        acc && Range.disjoint?(a, b)
-      end)
-    end)
-    |> Enum.map(fn {range, _i} -> range end)
-
-    filtered_maps = Enum.zip(maps, indexes)
-    |> Enum.map(fn {layer, filter} ->
-      layer
-      |> Enum.with_index()
-      |> Enum.filter(fn {_map, i} -> Enum.member?(filter, i) end)
-    end)
-
-    [3394639029..3454329438, 3492562455..3785530503, 3890048781..4223500385]
-    |> Stream.flat_map(fn seed -> seed end)
-    |> Stream.map(fn seed ->
-      if rem(seed, 100000) == 0, do: IO.puts(seed)
-      follow_map(seed, maps)
-    end)
-    |> Enum.min()
+    %MappingTransform{
+      range: range,
+      mapping: mapping,
+      intersection: intersection,
+      shifted: shifted,
+      difference: difference,
+      mapped: mapped,
+    }
   end
 
   defp parse_line(line, {current_key, acc}) do
@@ -309,15 +196,14 @@ defmodule Day05IfYouGiveASeedAFertilizer do
 
   defp parse_map(line) do
     [destination, source, length] = parse_int_list(line)
-    {source..(source + length - 1), destination - source}
+    %Mapping{source: source..(source + length - 1), shift: destination - source}
   end
 
   def follow_map(seed, maps) do
     maps
     |> Enum.reduce(seed, fn maps, acc ->
-      if map = Enum.find(maps, fn {source, _} -> Enum.member?(source, acc) end) do
-        {_, diff} = map
-        acc + diff
+      if map = Enum.find(maps, fn mapping -> Enum.member?(mapping.source, acc) end) do
+        acc + map.shift
       else
         acc
       end
