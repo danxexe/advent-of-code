@@ -23,7 +23,7 @@ defmodule Day06 do
   ## Examples
 
       iex> Day06.solution_for_file_part1()
-      nil
+      128700
   """
   def solution_for_file_part1()
 
@@ -31,7 +31,7 @@ defmodule Day06 do
   ## Examples
 
       iex> Day06.sample_solution_part2()
-      nil
+      71503
   """
   def sample_solution_part2()
 
@@ -39,7 +39,7 @@ defmodule Day06 do
   ## Examples
 
       iex> Day06.solution_for_file_part2()
-      nil
+      39594072
   """
   def solution_for_file_part2()
 
@@ -57,12 +57,23 @@ defmodule Day06 do
     |> Enum.reduce(1, fn race, acc -> race.options * acc end)
   end
 
-  defp solution_part2(_lines) do
+  defp solution_part2(lines) do
+    [time, distance] = lines
+    |> Enum.map(&parse_bad_line/1)
+
+    %Race{time: time, distance: distance}
+    |> compute_options()
   end
 
   defp parse_line(line) do
     Regex.scan(~r/\d+/, line)
     |> Enum.map(fn [n] -> Integer.parse(n) |> elem(0) end)
+  end
+
+  defp parse_bad_line(line) do
+    Regex.scan(~r/\d+/, line)
+    |> Enum.join("")
+    |> Integer.parse() |> elem(0)
   end
 
   defp parse_race({time, distance}) do
