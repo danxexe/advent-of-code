@@ -1,7 +1,7 @@
 defmodule Day05IfYouGiveASeedAFertilizer do
 
   @sample_data_part_1 """
-    seeds: 79 14 55 13
+    seeds: 3394639029
 
     seed-to-soil map:
     50 98 2
@@ -41,7 +41,7 @@ defmodule Day05IfYouGiveASeedAFertilizer do
   use Aoc.SolutionUtils
 
   defmodule Mapping do
-    defstruct [source: nil, destination: nil]
+    defstruct [source: nil, diff: nil]
   end
 
   @doc ~S"""
@@ -60,6 +60,22 @@ defmodule Day05IfYouGiveASeedAFertilizer do
   """
   def solution_for_file_part1()
 
+  @doc ~S"""
+  ## Examples
+
+      iex> Day05IfYouGiveASeedAFertilizer.sample_solution_part2()
+      46
+  """
+  def sample_solution_part2()
+
+  @doc ~S"""
+  ## Examples
+
+      iex> Day05IfYouGiveASeedAFertilizer.solution_for_file_part2()
+      nil
+  """
+  def solution_for_file_part2()
+
   defp solution_part1(lines) do
     seeds = lines |> Enum.take(1) |> hd() |> parse_int_list()
 
@@ -70,8 +86,8 @@ defmodule Day05IfYouGiveASeedAFertilizer do
 
     maps = maps
     |> Enum.reverse()
-    |> Enum.map(fn {k, v} ->
-      {k, v |> Enum.map(&parse_map/1) |> Enum.reverse()}
+    |> Enum.map(fn {_k, v} ->
+      v |> Enum.map(&parse_map/1) |> Enum.reverse()
     end)
 
     seeds
@@ -79,8 +95,198 @@ defmodule Day05IfYouGiveASeedAFertilizer do
     |> Enum.min()
   end
 
+  @doc ~S"""
+  Terrbile attempt at "backtracking" the solution with unrolled loops.
+  Apply mappings in reverse only for the smallest humidity-to-location range,
+  Then brute-force for the seed ranges found.
+
+  The current answer, 194991402, still takes a long time to compute
+  and is wrong anyway. Committing this for future :facepalm: purposes.
+
+  The actual optimized solution should be something like:
+  - For each layer (including seeds)
+    - Merge ranges if !Range.disjoint?(a, b): min(a.first, b.first)..max(a.last, b.last)
+    - For each range
+      - Reduce source mappings of next layer, spliting into {before, join, after}
+      - Map new ranges to destination
+  """
   defp solution_part2(lines) do
-    lines
+    DateTime.utc_now() |> IO.inspect
+    seeds = lines |> Enum.take(1) |> hd() |> parse_int_list()
+    |> Stream.chunk_every(2)
+    |> Stream.map(fn [start, len] ->
+      start..(start + len - 1)
+    end)
+
+    {_, maps} = lines
+    |> Stream.drop(1)
+    |> Stream.map(&String.trim/1)
+    |> Enum.reduce({nil, []}, &parse_line/2)
+
+    maps = maps
+    |> Enum.reverse()
+    |> Enum.map(fn {_k, v} ->
+      v |> Enum.map(&parse_map/1) |> Enum.reverse()
+    end)
+
+    indexes = []
+
+    # humidity-to-location
+    layer = maps
+    |> Enum.at(6)
+
+    sorted = layer
+    |> Enum.map(fn {range, diff} ->
+      {range.first + diff, range}
+    end)
+    |> Enum.with_index()
+    |> Enum.sort_by(fn {{first, range}, i} -> first end)
+
+    {{_min, range}, i} = sorted |> hd()
+    indexes = [[i] | indexes]
+
+    # 2984989380..3009100645
+    range
+
+    # temperature-to-humidity
+    layer = maps
+    |> Enum.at(5)
+
+    sorted = layer
+    |> Enum.map(fn {range, diff} ->
+      (range.first + diff)..(range.last + diff)
+    end)
+    |> Enum.with_index()
+    |> Enum.sort_by(fn {range, i} -> range.first end)
+    |> Enum.filter(fn {r, _i} -> r.first <= range.first && r.last >= range.last end)
+
+    {range, i} = sorted |> hd()
+    indexes = [[i] | indexes]
+
+    # 2631474761..3690130271
+    range
+
+    # light-to-temperature
+    layer = maps
+    |> Enum.at(4)
+
+    sorted = layer
+    |> Enum.map(fn {range, diff} ->
+      (range.first + diff)..(range.last + diff)
+    end)
+    |> Enum.with_index()
+    |> Enum.sort_by(fn {range, i} -> range.first end)
+    |> Enum.reject(fn {r, _i} -> Range.disjoint?(r, range) end)
+
+    ranges = sorted
+    |> Enum.map(fn {range, _i} -> range end)
+    indexes = [sorted |> Enum.map(fn {_,i} -> i end) | indexes]
+
+    # water-to-light
+    layer = maps
+    |> Enum.at(3)
+
+    sorted = layer
+    |> Enum.map(fn {range, diff} ->
+      (range.first + diff)..(range.last + diff)
+    end)
+    |> Enum.with_index()
+    |> Enum.sort_by(fn {range, i} -> range.first end)
+    |> Enum.reject(fn {a, _i} ->
+      ranges |> Enum.reduce(fn b, acc ->
+        acc && Range.disjoint?(a, b)
+      end)
+    end)
+
+    ranges = sorted
+    |> Enum.map(fn {range, _i} -> range end)
+    indexes = [sorted |> Enum.map(fn {_,i} -> i end) | indexes]
+
+    # fertilizer-to-water
+    layer = maps
+    |> Enum.at(2)
+
+    sorted = layer
+    |> Enum.map(fn {range, diff} ->
+      (range.first + diff)..(range.last + diff)
+    end)
+    |> Enum.with_index()
+    |> Enum.sort_by(fn {range, i} -> range.first end)
+    |> Enum.reject(fn {a, _i} ->
+      ranges |> Enum.reduce(fn b, acc ->
+        acc && Range.disjoint?(a, b)
+      end)
+    end)
+
+    ranges = sorted
+    |> Enum.map(fn {range, _i} -> range end)
+    indexes = [sorted |> Enum.map(fn {_,i} -> i end) | indexes]
+
+    # soil-to-fertilizer
+    layer = maps
+    |> Enum.at(1)
+
+    sorted = layer
+    |> Enum.map(fn {range, diff} ->
+      (range.first + diff)..(range.last + diff)
+    end)
+    |> Enum.with_index()
+    |> Enum.sort_by(fn {range, i} -> range.first end)
+    |> Enum.reject(fn {a, _i} ->
+      ranges |> Enum.reduce(fn b, acc ->
+        acc && Range.disjoint?(a, b)
+      end)
+    end)
+
+    ranges = sorted
+    |> Enum.map(fn {range, _i} -> range end)
+    indexes = [sorted |> Enum.map(fn {_,i} -> i end) | indexes]
+
+    # seed-to-soil
+    layer = maps
+    |> Enum.at(0)
+
+    sorted = layer
+    |> Enum.map(fn {range, diff} ->
+      (range.first + diff)..(range.last + diff)
+    end)
+    |> Enum.with_index()
+    |> Enum.sort_by(fn {range, i} -> range.first end)
+    |> Enum.reject(fn {a, _i} ->
+      ranges |> Enum.reduce(fn b, acc ->
+        acc && Range.disjoint?(a, b)
+      end)
+    end)
+
+    ranges = sorted
+    |> Enum.map(fn {range, _i} -> range end)
+    indexes = [sorted |> Enum.map(fn {_,i} -> i end) | indexes]
+
+    # seeds
+    sorted = seeds
+    |> Enum.with_index()
+    |> Enum.sort_by(fn {range, i} -> range.first end)
+    |> Enum.reject(fn {a, _i} ->
+      ranges |> Enum.reduce(fn b, acc ->
+        acc && Range.disjoint?(a, b)
+      end)
+    end)
+    |> Enum.map(fn {range, _i} -> range end)
+
+    filtered_maps = Enum.zip(maps, indexes)
+    |> Enum.map(fn {layer, filter} ->
+      layer
+      |> Enum.with_index()
+      |> Enum.filter(fn {_map, i} -> Enum.member?(filter, i) end)
+    end)
+
+    [3394639029..3454329438, 3492562455..3785530503, 3890048781..4223500385]
+    |> Stream.flat_map(fn seed -> seed end)
+    |> Stream.map(fn seed ->
+      if rem(seed, 100000) == 0, do: IO.puts(seed)
+      follow_map(seed, maps)
+    end)
+    |> Enum.min()
   end
 
   defp parse_line(line, {current_key, acc}) do
@@ -103,20 +309,15 @@ defmodule Day05IfYouGiveASeedAFertilizer do
 
   defp parse_map(line) do
     [destination, source, length] = parse_int_list(line)
-
-    %Mapping{
-      source: source..(source + length - 1),
-      destination: destination..(destination + length - 1),
-    }
+    {source..(source + length - 1), destination - source}
   end
 
   def follow_map(seed, maps) do
     maps
-    |> Enum.reduce(seed, fn {_k, maps}, acc ->
-      if map = Enum.find(maps, fn mapping -> Enum.member?(mapping.source, acc) end) do
-        source = map.source |> Enum.take(1) |> hd()
-        dest = map.destination |> Enum.take(1) |> hd()
-        acc + (dest - source)
+    |> Enum.reduce(seed, fn maps, acc ->
+      if map = Enum.find(maps, fn {source, _} -> Enum.member?(source, acc) end) do
+        {_, diff} = map
+        acc + diff
       else
         acc
       end
