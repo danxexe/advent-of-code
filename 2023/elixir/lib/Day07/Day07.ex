@@ -1,4 +1,7 @@
 defmodule Day07 do
+  @moduledoc """
+  --- Day 7: Camel Cards ---
+  """
 
   @sample_data_part_1 """
   32T3K 765

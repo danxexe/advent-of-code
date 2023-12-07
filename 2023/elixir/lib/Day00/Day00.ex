@@ -1,4 +1,7 @@
 defmodule Day00 do
+  @moduledoc """
+  --- Day 0: Sample ---
+  """
 
   @sample_data_part_1 """
   """
