@@ -5,4 +5,6 @@ defmodule AocTest do
   doctest Day03GearRatios
   doctest Day04Scratchcards
   doctest D05
+  doctest Day06
+  doctest Day07
 end
