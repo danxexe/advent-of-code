@@ -61,8 +61,10 @@ defmodule Day06 do
     [time, distance] = lines
     |> Enum.map(&parse_bad_line/1)
 
-    %Race{time: time, distance: distance}
+    race = %Race{time: time, distance: distance}
     |> compute_options()
+
+    race.options
   end
 
   defp parse_line(line) do
