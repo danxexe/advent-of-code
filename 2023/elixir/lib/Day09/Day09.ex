@@ -34,7 +34,7 @@ defmodule Day09 do
   ## Examples
 
       iex> Day09.sample_solution_part2()
-      nil
+      2
   """
   def sample_solution_part2()
 
@@ -42,7 +42,7 @@ defmodule Day09 do
   ## Examples
 
       iex> Day09.solution_for_file_part2()
-      nil
+      971
   """
   def solution_for_file_part2()
 
@@ -65,6 +65,11 @@ defmodule Day09 do
 
   defp solution_part2(lines) do
     lines
+    |> Enum.map(&parse_history/1)
+    |> Enum.map(&compute_next_sequence/1)
+    |> Enum.map(&predict_sequence_reverse/1)
+    |> Enum.map(fn history -> history.prediction end)
+    |> Enum.sum()
   end
 
   defp parse_history(line) do
@@ -110,6 +115,20 @@ defmodule Day09 do
       %History{history | prediction: prediction}
     else
       do_predict_sequence(history, i - 1, prediction)
+    end
+  end
+
+  defp predict_sequence_reverse(history) do
+    do_predict_sequence_reverse(history, history.last - 1, 0)
+  end
+
+  defp do_predict_sequence_reverse(history, i, prediction) do
+    prediction = (history.sequences[i].values |> List.first()) - prediction
+
+    if i == 0 do
+      %History{history | prediction: prediction}
+    else
+      do_predict_sequence_reverse(history, i - 1, prediction)
     end
   end
 end
