@@ -68,6 +68,10 @@ defmodule Day10 do
       %Map2D{map | tiles: new_tiles, width: max(map.width, Enum.count(tiles)), heigth: row + 1}
     end
 
+    def replace_tile(map, pos, tile) do
+      %Map2D{map | tiles: map.tiles |> Map.put(pos, tile)}
+    end
+
     def print(map) do
       rows = 0..(map.heigth - 1)
       cols = 0..(map.width - 1)
@@ -76,7 +80,7 @@ defmodule Day10 do
       |> Stream.map(fn row ->
         cols
         |> Stream.map(fn col ->
-          map.tiles[{row, col}]
+          map.tiles[{row, col}] || " "
         end)
         |> Enum.join("")
       end)
@@ -94,25 +98,30 @@ defmodule Day10 do
     {start, _} = map.tiles
     |> Enum.find(fn {_, tile} -> tile == "█" end)
 
-    # slightly cheating since we know the starting position for the sample and the input
-    {start_tile, dir} = if map.heigth == 5 do
-      {"┌", {-1, 0}}
-    else
-      {"─", {0, 1}}
-    end
-    map = %Map2D{map | tiles: map.tiles |> Map.put(start, start_tile)}
+    loop_tiles = map |> follow_pipe(start, {0, 1}, [start])
 
-    # map
-    # |> Map2D.print
-    # |> IO.puts
-
-    positions = map |> follow_pipe(start, dir, [start])
-
-    div(positions |> Enum.count(), 2)
+    div(loop_tiles |> Enum.count(), 2)
   end
 
   defp solution_part2(lines) do
-    lines
+    map = lines
+    |> Enum.reduce(Map2D.new(), fn line, map ->
+      Map2D.push_row(map, parse_line(String.trim(line)))
+    end)
+
+    {start, _} = map.tiles
+    |> Enum.find(fn {_, tile} -> tile == "█" end)
+
+    loop_tiles = map |> follow_pipe(start, {0, 1}, [start])
+    |> Enum.map(fn pos ->
+      {pos, map.tiles[pos]}
+    end)
+    |> Enum.into(%{})
+
+    %Map2D{map | tiles: loop_tiles}
+    |> Map2D.replace_tile(start, "█")
+    |> Map2D.print()
+    |> IO.puts
   end
 
   defp parse_line(line) do
@@ -149,6 +158,7 @@ defmodule Day10 do
       {"┐", :up} -> :left
       {"┌", :left} -> :down
       {"┌", :up} -> :right
+      {"█", dir} -> dir
       _ -> nil
     end
     |> dir_to_vec()
