@@ -32,7 +32,7 @@ defmodule Day11 do
   ## Examples
 
       iex> Day11.solution_for_file_part1()
-      nil
+      10313550
   """
   def solution_for_file_part1()
 
@@ -40,7 +40,7 @@ defmodule Day11 do
   ## Examples
 
       iex> Day11.sample_solution_part2()
-      nil
+      82000210
   """
   def sample_solution_part2()
 
@@ -48,14 +48,14 @@ defmodule Day11 do
   ## Examples
 
       iex> Day11.solution_for_file_part2()
-      nil
+      611998089572
   """
   def solution_for_file_part2()
 
 
   defp solution_part1(lines) do
     map = lines
-    |> expand_universe()
+    |> expand_universe(2)
     |> Enum.reduce(Map2D.new, fn line, map ->
       map |> Map2D.push_row(line |> String.codepoints)
     end)
@@ -71,15 +71,29 @@ defmodule Day11 do
   end
 
   defp solution_part2(lines) do
-    lines
-    |> expand_universe()
+    map = lines
+    |> Stream.map(&String.trim/1)
+    |> Enum.reduce(Map2D.new, fn line, map ->
+      map |> Map2D.push_row(line |> String.codepoints)
+    end)
+
+    galaxies = map.tiles
+    |> Stream.filter(fn {_pos, tile} -> tile == "#" end)
+    |> Enum.map(fn {pos, _} -> pos end)
+
+    galaxies
+    |> expand_universe_v2(map, 1000000)
+    |> EnumEx.combinations(2)
+    |> Enum.map(&step_distance/1)
+    |> Enum.sum()
   end
 
-  defp duplicate_empty_line(line) do
+  defp duplicate_empty_line(line, times) do
     if String.contains?(line, "#") do
       [line]
     else
-      [line, line]
+      (1..times)
+      |> Stream.map(fn _ -> line end)
     end
   end
 
@@ -90,13 +104,38 @@ defmodule Day11 do
     |> Stream.map(fn codepoints -> codepoints |> Tuple.to_list() |> Enum.join("") end)
   end
 
-  defp expand_universe(lines) do
+  defp expand_universe(lines, times) do
     lines
     |> Stream.map(&String.trim/1)
-    |> Stream.flat_map(&duplicate_empty_line/1)
+    |> Stream.flat_map(fn line -> duplicate_empty_line(line, times) end)
     |> flip()
-    |> Stream.flat_map(&duplicate_empty_line/1)
+    |> Stream.flat_map(fn line -> duplicate_empty_line(line, times) end)
     |> flip()
+  end
+
+  defp expand_universe_v2(galaxies, map, times) do
+    rows = galaxies
+    |> Enum.map(fn {row, _} -> row end)
+    |> Enum.uniq()
+
+    empty_rows = Enum.to_list(0..map.heigth - 1) -- rows
+
+    cols = galaxies
+    |> Enum.map(fn {_, col} -> col end)
+    |> Enum.uniq()
+
+    empty_cols = Enum.to_list(0..map.width - 1) -- cols
+
+    galaxies
+    |> Enum.map(fn {row, col} ->
+      grow_row = empty_rows |> Enum.filter(fn r -> row > r end) |> Enum.count()
+      grow_row = (grow_row * times) - grow_row
+
+      grow_col = empty_cols |> Enum.filter(fn c -> col > c end) |> Enum.count()
+      grow_col = (grow_col * times) - grow_col
+
+      {row + grow_row, col + grow_col}
+    end)
   end
 
   defp step_distance([a, b]) do
