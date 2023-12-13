@@ -106,8 +106,7 @@ defmodule Day08 do
       end)
       |> elem(1)
     end)
-    # Current implementation is terrible
-    # |> minimum_common_multiple()
+    |> Enum.reduce(fn a, b -> minimum_common_multiple(a, b) end)
   end
 
   defp direction(direction) do
@@ -146,32 +145,10 @@ defmodule Day08 do
     end)
   end
 
-  # defp minimum_common_multiple(values) do
-  #   do_minimum_common_multiple(values |> Enum.map(fn v -> {v, v} end))
-  # end
-  # defp do_minimum_common_multiple(values) do
-  #   [{memo, min} | rest] = values |> Enum.sort_by(fn {_k, v} -> v end)
+	def greatest_common_divisor(a, 0), do: a
+	def greatest_common_divisor(0, b), do: b
+	def greatest_common_divisor(a, b), do: greatest_common_divisor(b, rem(a,b))
 
-  #   values = [{memo, min + memo} | rest] |> Enum.into(%{})
-  #   |> IO.inspect
-
-  #   if all_equal(values |> Map.values) do
-  #     values
-  #   else
-  #     do_minimum_common_multiple(values)
-  #   end
-  # end
-
-  # defp all_equal([v | values]) do
-  #   do_all_equal(values, v) == v
-  # end
-
-  # defp do_all_equal([], acc), do: acc
-  # defp do_all_equal([v | values], acc) do
-  #   if v == acc do
-  #     do_all_equal(values, acc)
-  #   else
-  #     false
-  #   end
-  # end
+	def minimum_common_multiple(0, 0), do: 0
+  def minimum_common_multiple(a, b), do: div((a*b), greatest_common_divisor(a,b))
 end
