@@ -1,10 +1,10 @@
+import aoc
 import gleam/dict
 import gleam/int
 import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
-import simplifile
 
 const sample_data_part_1 = "
 3   4
@@ -22,16 +22,13 @@ pub fn main() {
 
 pub fn sample_solution_part1() {
   sample_data_part_1
-  |> string.split("\n")
-  |> list.filter(fn(row) { row != "" })
+  |> aoc.string_to_rows()
   |> solution_part1()
 }
 
 pub fn file_solution_part1() {
-  simplifile.read("src/day01/input.txt")
-  |> result.lazy_unwrap(fn() { panic })
-  |> string.split("\n")
-  |> list.filter(fn(row) { row != "" })
+  "src/day01/input.txt"
+  |> aoc.file_to_rows()
   |> solution_part1()
 }
 
@@ -52,16 +49,13 @@ pub fn solution_part1(rows) {
 
 pub fn sample_solution_part2() {
   sample_data_part_1
-  |> string.split("\n")
-  |> list.filter(fn(row) { row != "" })
+  |> aoc.string_to_rows()
   |> solution_part2()
 }
 
 pub fn file_solution_part2() {
-  simplifile.read("src/day01/input.txt")
-  |> result.lazy_unwrap(fn() { panic })
-  |> string.split("\n")
-  |> list.filter(fn(row) { row != "" })
+  "src/day01/input.txt"
+  |> aoc.file_to_rows()
   |> solution_part2()
 }
 
@@ -83,15 +77,13 @@ pub fn solution_part2(rows) {
   similarity
 }
 
-fn parse_lists(rows) {
+fn parse_lists(rows: List(String)) -> #(List(Int), List(Int)) {
   rows
-  |> list.map(fn(row) {
-    let assert [l, r] = string.split(row, "   ")
-    #(l |> parse_or_die(), r |> parse_or_die())
-  })
+  |> list.map(parse_row)
   |> list.unzip()
 }
 
-fn parse_or_die(val) {
-  val |> int.parse() |> result.lazy_unwrap(fn() { panic })
+fn parse_row(row: String) -> #(Int, Int) {
+  let assert [l, r] = row |> string.split("   ")
+  #(l |> int.parse() |> aoc.or_panic(), r |> int.parse() |> aoc.or_panic())
 }
