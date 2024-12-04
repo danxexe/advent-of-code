@@ -15,3 +15,17 @@ pub fn day04_part1_input_test() {
   |> day04.solution_part1()
   |> should.equal(2434)
 }
+
+pub fn day04_part2_sample_test() {
+  "src/day04/sample.txt"
+  |> aoc.file_to_rows()
+  |> day04.solution_part2()
+  |> should.equal(9)
+}
+
+pub fn day04_part2_input_test() {
+  "src/day04/input.txt"
+  |> aoc.file_to_rows()
+  |> day04.solution_part2()
+  |> should.equal(1835)
+}
