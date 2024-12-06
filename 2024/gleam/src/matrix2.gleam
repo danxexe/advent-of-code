@@ -61,20 +61,24 @@ pub fn debug(matrix: Matrix2(t)) -> Matrix2(t) {
   matrix
 }
 
-pub fn reduce(matrix: Matrix2(t), acc: a, callback: fn(a, t) -> a) -> a {
-  matrix |> do_reduce(acc, callback, 0, 0)
-}
-
-fn do_reduce(
+pub fn fold(
   matrix: Matrix2(t),
   acc: a,
-  callback: fn(a, t) -> a,
+  callback: fn(a, t, #(Int, Int)) -> a,
+) -> a {
+  matrix |> do_fold(acc, callback, 0, 0)
+}
+
+fn do_fold(
+  matrix: Matrix2(t),
+  acc: a,
+  callback: fn(a, t, #(Int, Int)) -> a,
   x: Int,
   y: Int,
 ) -> a {
   case x, y {
     _, y if y == matrix.heigth -> acc
-    x, _ if x == matrix.width -> do_reduce(matrix, acc, callback, 0, y + 1)
+    x, _ if x == matrix.width -> do_fold(matrix, acc, callback, 0, y + 1)
     x, y -> {
       let assert Ok(row) =
         matrix.rows
@@ -84,9 +88,23 @@ fn do_reduce(
         row
         |> array.get(x)
 
-      do_reduce(matrix, callback(acc, current), callback, x + 1, y)
+      do_fold(matrix, callback(acc, current, #(x, y)), callback, x + 1, y)
     }
   }
+}
+
+pub fn filter_index(
+  matrix: Matrix2(t),
+  callback: fn(t) -> Bool,
+) -> List(#(Int, Int)) {
+  matrix
+  |> fold([], fn(acc, val, pos) {
+    case callback(val) {
+      True -> [pos, ..acc]
+      False -> acc
+    }
+  })
+  |> list.reverse()
 }
 
 pub fn find_first(matrix: Matrix2(t), value: t) {
