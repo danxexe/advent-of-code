@@ -17,18 +17,18 @@ pub fn part1_input_test() {
   |> should.equal(5551)
 }
 
-// pub fn part2_sample_test() {
-//   "src/day06/sample.txt"
-//   |> aoc.file_to_rows()
-//   |> day.solution_part2()
-//   |> should.equal(6)
-// }
+pub fn part2_sample_test() {
+  "src/day06/sample.txt"
+  |> aoc.file_to_rows()
+  |> day.solution_part2()
+  |> should.equal(6)
+}
 
 pub fn part2_input_test_() {
   test_spec.make(fn() {
     "src/day06/input.txt"
     |> aoc.file_to_rows()
     |> day.solution_part2()
-    // |> should.equal(41)
+    |> should.equal(1939)
   })
 }
