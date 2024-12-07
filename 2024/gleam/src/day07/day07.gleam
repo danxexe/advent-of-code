@@ -11,14 +11,21 @@ type Equation {
 type Operator {
   Add
   Mul
+  Concat
 }
 
-const possible_ops = [Add, Mul]
-
 pub fn solution_part1(rows: List(String)) {
+  rows |> solution([Add, Mul])
+}
+
+pub fn solution_part2(rows: List(String)) {
+  rows |> solution([Add, Mul, Concat])
+}
+
+fn solution(rows: List(String), operators) {
   rows
   |> list.map(parse_equation)
-  |> list.filter(has_solution)
+  |> list.filter(has_solution(_, operators))
   |> list.map(fn(equation) { equation.solution })
   |> list.reduce(int.add)
   |> aoc.or_panic
@@ -59,7 +66,7 @@ fn combine_n_times(value, times) {
   |> aoc.or_panic
 }
 
-fn has_solution(equation: Equation) {
+fn has_solution(equation: Equation, possible_ops) {
   let solution_count =
     possible_ops
     |> combine_n_times(list.length(equation.operands) - 1)
@@ -77,11 +84,20 @@ fn solve(equation: Equation, operators: List(Operator)) {
       let result = case op {
         Add -> left + rigth
         Mul -> left * rigth
+        Concat ->
+          { int.to_string(left) <> int.to_string(rigth) }
+          |> int.parse
+          |> aoc.or_panic
       }
-      solve(
-        Equation(..equation, operands: [result, ..rest_operands]),
-        rest_operators,
-      )
+
+      case result > equation.solution {
+        True -> -1
+        False ->
+          solve(
+            Equation(..equation, operands: [result, ..rest_operands]),
+            rest_operators,
+          )
+      }
     }
     _, _ -> panic
   }
