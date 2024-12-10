@@ -1,6 +1,7 @@
 import gary.{type ErlangArray}
 import gary/array
 import gleam/dynamic
+import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
@@ -43,6 +44,7 @@ pub fn inspect(matrix: Matrix2(_)) -> String {
 
       case val |> dynamic.classify() {
         "String" -> val |> dynamic.string() |> result.unwrap("")
+        "Int" -> val |> dynamic.int() |> result.unwrap(0) |> int.to_string()
         val -> val |> string.inspect()
       }
     })
