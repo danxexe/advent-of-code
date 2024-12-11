@@ -2,7 +2,6 @@ import aoc
 import bravo
 import bravo/uset
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/string
 
@@ -54,7 +53,6 @@ fn do_mutate(
         [] -> acc
         stones -> {
           let assert [stone, ..rest] = stones
-          rest |> list.length |> io.debug
           do_mutate([Mutate(stone, times)], rest, acc, times, cache)
         }
       }
