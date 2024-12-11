@@ -1,9 +1,22 @@
 import aoc
+import bravo
+import bravo/uset
 import gleam/int
 import gleam/io
 import gleam/list
 import gleam/string
-import gleam/yielder.{type Yielder}
+
+type Mutate {
+  Mutate(val: String, times: Int)
+}
+
+type Mutation {
+  Single(val: String)
+  Multi(a: String, b: String)
+}
+
+type Cache =
+  uset.USet(#(Mutate, Int))
 
 pub fn solution_part1(rows: List(String)) {
   solution(rows, 25)
@@ -19,22 +32,13 @@ fn solution(rows: List(String), times: Int) {
   |> aoc.or_panic()
   |> string.split(" ")
   |> mutate(times)
-  // |> list.length()
-  |> io.debug
 }
 
 fn mutate(stones: List(String), times: Int) -> Int {
-  do_mutate([], stones, 0, times)
-  // |> list.reverse()
-}
-
-type Mutate {
-  Mutate(val: String, times: Int)
-}
-
-type Mutation {
-  Single(val: String)
-  Multi(a: String, b: String)
+  let assert Ok(cache) = uset.new("Cache", 1, bravo.Public)
+  let count = do_mutate([], stones, 0, times, cache)
+  uset.delete(cache)
+  count
 }
 
 fn do_mutate(
@@ -42,13 +46,8 @@ fn do_mutate(
   stones: List(String),
   acc: Int,
   times: Int,
+  cache: Cache,
 ) -> Int {
-  // mutate |> io.debug
-  // stones |> io.debug
-  // acc |> io.debug
-  // times |> io.debug
-  // "---" |> io.debug
-
   case mutate {
     [] -> {
       case stones {
@@ -56,22 +55,46 @@ fn do_mutate(
         stones -> {
           let assert [stone, ..rest] = stones
           rest |> list.length |> io.debug
-          do_mutate([Mutate(stone, times)], rest, acc, times)
+          do_mutate([Mutate(stone, times)], rest, acc, times, cache)
         }
       }
     }
     [mut, ..other] -> {
       case mut {
-        Mutate(_, 0) -> do_mutate(other, stones, acc + 1, times)
-        Mutate(stone, n) -> {
-          let n = n - 1
-          let mutate = case mutate_single(stone) {
-            Single(s) -> [Mutate(s, n), ..other]
-            Multi(s1, s2) -> [Mutate(s1, n), Mutate(s2, n), ..other]
-          }
-          do_mutate(mutate, stones, acc, times)
+        Mutate(_, 0) -> do_mutate(other, stones, acc + 1, times, cache)
+        Mutate(_, _) -> {
+          let #(count, cache) = mutate_n_times(mut, cache)
+          do_mutate(other, stones, acc + count, times, cache)
         }
       }
+    }
+  }
+}
+
+fn mutate_n_times(mutate: Mutate, cache: Cache) -> #(Int, Cache) {
+  case uset.lookup(cache, mutate) {
+    Ok(#(_, count)) -> #(count, cache)
+    _ -> {
+      let #(count, cache) = case mutate.times {
+        0 -> #(1, cache)
+        times -> {
+          let mut = mutate_single(mutate.val)
+          let n = times - 1
+          case mut {
+            Single(v) -> mutate_n_times(Mutate(v, n), cache)
+            Multi(a, b) -> {
+              let #(a, cache) = mutate_n_times(Mutate(a, n), cache)
+              let #(b, cache) = mutate_n_times(Mutate(b, n), cache)
+
+              #(a + b, cache)
+            }
+          }
+        }
+      }
+
+      uset.insert(cache, [#(mutate, count)])
+
+      #(count, cache)
     }
   }
 }
