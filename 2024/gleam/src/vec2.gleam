@@ -14,6 +14,10 @@ pub fn directions() -> List(Vec2) {
   [left, up, right, down]
 }
 
+pub fn new(x: Int, y: Int) -> Vec2 {
+  Vec2(x, y)
+}
+
 pub fn from_tuple(t: #(Int, Int)) -> Vec2 {
   Vec2(t.0, t.1)
 }

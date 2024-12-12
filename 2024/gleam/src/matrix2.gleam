@@ -7,6 +7,7 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
 import gleam/string
+import vec2.{type Vec2}
 
 pub type Matrix2(t) {
   Matrix2(
@@ -110,13 +111,20 @@ pub fn filter_index(
 }
 
 pub fn find_first(matrix: Matrix2(t), value: t) {
-  matrix |> do_first(value, 0, 0)
+  matrix |> do_first(fn(v) { value == v }, 0, 0)
 }
 
-fn do_first(matrix: Matrix2(t), value: t, x: Int, y: Int) {
+pub fn find_first_with(
+  matrix: Matrix2(t),
+  callback: fn(t) -> Bool,
+) -> option.Option(#(Int, Int)) {
+  matrix |> do_first(callback, 0, 0)
+}
+
+fn do_first(matrix: Matrix2(t), callback: fn(t) -> Bool, x: Int, y: Int) {
   case x, y {
     _, y if y == matrix.heigth -> None
-    x, _ if x == matrix.width -> do_first(matrix, value, 0, y + 1)
+    x, _ if x == matrix.width -> do_first(matrix, callback, 0, y + 1)
     x, y -> {
       let assert Ok(row) =
         matrix.rows
@@ -126,9 +134,9 @@ fn do_first(matrix: Matrix2(t), value: t, x: Int, y: Int) {
         row
         |> array.get(x)
 
-      case current == value {
+      case callback(current) {
         True -> Some(#(x, y))
-        False -> do_first(matrix, value, x + 1, y)
+        False -> do_first(matrix, callback, x + 1, y)
       }
     }
   }
@@ -146,6 +154,10 @@ pub fn get(matrix: Matrix2(t), pos: #(Int, Int)) -> t {
   }
 }
 
+pub fn getv(matrix: Matrix2(t), pos: Vec2) -> t {
+  get(matrix, #(pos.x, pos.y))
+}
+
 pub fn set(matrix: Matrix2(t), pos: #(Int, Int), val: t) -> Matrix2(t) {
   let assert Ok(row) =
     matrix.rows
@@ -158,4 +170,54 @@ pub fn set(matrix: Matrix2(t), pos: #(Int, Int), val: t) -> Matrix2(t) {
   let assert Ok(new_rows) = matrix.rows |> array.set(pos.1, new_row)
 
   Matrix2(..matrix, rows: new_rows)
+}
+
+pub fn setv(matrix: Matrix2(t), pos: Vec2, value: t) -> Matrix2(t) {
+  let row = matrix.rows |> array.get(pos.y)
+
+  case row {
+    Ok(row) -> {
+      let new_row = row |> array.set(pos.x, value)
+      case new_row {
+        Ok(new_row) -> {
+          let assert Ok(new_rows) = matrix.rows |> array.set(pos.y, new_row)
+          Matrix2(..matrix, rows: new_rows)
+        }
+        Error(_) -> matrix
+      }
+    }
+    Error(_) -> matrix
+  }
+}
+
+pub fn deletev(matrix: Matrix2(t), pos: Vec2) -> Matrix2(t) {
+  let row = matrix.rows |> array.get(pos.y)
+
+  case row {
+    Ok(row) -> {
+      let new_row = row |> array.drop(pos.x)
+      case new_row {
+        Ok(new_row) -> {
+          let assert Ok(new_rows) = matrix.rows |> array.set(pos.y, new_row)
+          Matrix2(..matrix, rows: new_rows)
+        }
+        Error(_) -> matrix
+      }
+    }
+    Error(_) -> matrix
+  }
+}
+
+pub fn is_in_bounds(matrix: Matrix2(_), pos: Vec2) -> Bool {
+  pos.x >= 0 && pos.y >= 1 && pos.x < matrix.width && pos.y < matrix.heigth
+}
+
+pub fn sparse_map(matrix2: Matrix2(t), callback: fn(t) -> t) -> Matrix2(t) {
+  let rows =
+    matrix2.rows
+    |> array.sparse_map(fn(_, row) {
+      row |> array.sparse_map(fn(_, v) { callback(v) })
+    })
+
+  Matrix2(..matrix2, rows:)
 }
